@@ -1,0 +1,147 @@
+swagger: '2.0'
+
+schemes:
+  - http
+  - https
+
+host: localhost
+basePath: /{NumeroConexao}
+
+info:
+  description: "Para integrar com o sistema CFIWEB da ZAP Sistemas"
+  version: "1.0.0"
+  title: "API CFIWEB Common"
+   
+consumes:
+  - application/json
+produces:
+  - application/json
+tags:
+- name: "Common" 
+  description: "Endpoints comuns a todos "
+
+paths:
+  '/login':
+    post:
+      tags:
+      - "Common"
+      summary: Autenticacao e geracao de token
+      description: Autenticacao e geracao de token
+      operationId: Autenticacao
+      parameters:
+        - in: body
+          name: LoginViewModel
+          schema:
+              $ref: '#/definitions/E_Login'
+      responses:
+        200:
+          description: Consulta efetuada com sucesso
+          schema:
+            $ref: '#/definitions/S_Login'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'            
+          
+
+#******************************************************************************
+#******************************************************************************
+
+definitions:
+  E_Login:
+    type: object
+    properties:
+      Usuario:
+        type: string
+      Senha:
+        type: string
+
+  S_Login:
+    type: object
+    properties:
+      Contexto:
+        type: object
+        properties:
+          Token:
+            type: string
+      Resultado:
+        type: "integer"
+        default: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        default: "Sucesso"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+
+  S_Erro_500:
+    type: object
+    properties:
+      Contexto:
+        type: string
+        example: null
+      Resultado:
+        type: "integer"
+        default: 2
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        example: "Erro"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Erro desconhecido. Consulte o Log para mais informações!"
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "erroPadrao"
+
+  S_Erro_400:
+    type: object
+    properties:
+      Contexto:
+        type: string
+        default: "null"
+      Resultado:
+        type: "integer"
+        default: 2
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        example: "Erro"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          
