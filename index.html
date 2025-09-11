@@ -13,11 +13,13 @@
       window.onload = () => {
         SwaggerUIBundle({
           dom_id: '#swagger-ui',
+          deepLinking: true,
           urls: [
-            { url: "./APIContaCorrente.yaml", name: "Conta Corrente" },
-            { url: "./login.yaml", name: "Login" }
+            { url: './APIContaCorrente.yaml', name: 'Conta Corrente' },
+            { url: './login.yaml', name: 'Login' }
           ],
-          "urls.primaryName": "Conta Corrente"
+          'urls.primaryName': 'Conta Corrente',
+          validatorUrl: null
         });
       };
     </script>
