@@ -1,0 +1,3254 @@
+swagger: '2.0'
+info:
+  version: '1.3'
+  title: Conta Corrente Web
+  description: "Historico: \n\n 
+  * 03/06/2025 - Inclusão dos endpoints de aceitar, recusar reivindicação de posse e portabilidade, cancelamento de chave PIX e estorno PIX \n
+  * 16/05/2025 - Inclusão dos endpoints de Gestão de Chave e PIX \n
+  * 25/03/2025 - Inclusão de endpoints de cancelar transações, síncrono e assíncrono \n
+  * 14/03/2024 - Inclusão de novos campos no retorno da api de extrato detalhado \n
+  * 12/03/2024 - Inclusão de endpoint de abertura de conta corrente \n 
+  * 29/02/2024 - Inclusão de endpoint EstornarTransacao da Transação \n 
+  * 07/02/2023 - Inclusão de endpoints de resgate e aplicação financeira \n
+  * 14/03/2023 - Inclusão do enpoint de consulta de saldos \n
+  * 14/04/2023 - Inclusão dos enpoints de movimentação \n
+  * 14/07/2023 - Ajustes nos endpoints de bloqueios judiciais \n
+  * 19/07/2023 - Inclusao de endpoints de cadastro e alteracao de transferencias \n
+  * 23/08/2023 - Inclusao de endpoint de atualizacao de bloqueio judicial \n Inclusao de novos campos nas apis de bloqueio judicial \n
+  * 04/09/2023 - Inclusão de endpoints de Busca de Conta Corrente e de Transações \n
+  * 25/10/2023 - Mudanças para demanda de Adequações do bloqueio judicial \n
+  * 13/11/2023 - Ajustes no histórico de bloqueios \n"
+consumes:
+  - application/json
+produces:
+  - application/json
+tags:
+- name: "Conta Corrente"
+  description: "Cadastros e consultas de contas correntes"
+- name: "Gestão de Chave Pix"
+  description: "Gerenciamento de chaves PIX, incluindo funcionalidades de cadastro, consulta e reivindicação"
+- name: "Pix"
+  description: "Operações referentes a Transações Pix"
+- name: "Transações"
+  description: "Movimentações, transaferências e consultas"
+- name: "Bloqueio Judicial"
+  description: "Cadastro e consultas de bloqueios judiciais"
+  
+paths:
+  /contas-correntes/{CodigoContaCorrente}/bloqueios-judiciais:
+    get:
+      tags:
+        - "Bloqueio Judicial"
+      summary: Retorna uma lista de bloqueios judiciais atrelados a conta corrente
+      parameters:
+        - in: path
+          name: CodigoContaCorrente
+          required: true
+          type: string
+          description: Codigo de conta corrente a ser verificado.
+      description: Método para resgatar uma lista de bloqueios judiciais referente a uma conta corrente. Os históricos representam bloqueios intradia que podem ocorrer. Caso a conta tenha saldo total na hora que a ordem chega, o histórico só tera uma unica linha. Tipo de Ordem B = Bloqueio / D = Desbloqueio
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Consulta efetuada com sucesso
+          schema:
+            $ref: '#/definitions/R_Lista_BloqueiosJudiciais'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []
+    post:
+      tags:
+        - "Bloqueio Judicial"
+      summary: Cadastra Bloqueios ou Desbloqueios Judiciais a uma conta corrente
+      parameters:
+        - in: path
+          name: CodigoContaCorrente
+          required: true
+          type: string
+          description: Codigo de conta corrente a ser adiconado bloqueio.
+        - in: body
+          name: BloqueioJudViewModel
+          schema:
+            $ref: '#/definitions/bloqueioJudViewModelIN'
+      description: Método para incluir bloqueio ou desbloqueio a partir da PK da conta corrente
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Consulta efetuada com sucesso
+          schema:
+            $ref: '#/definitions/R_BloqueiosJudiciais'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []
+  /agencias/{NumeroAgencia}/contas-correntes/{NumeroConta}/bloqueios-judiciais:
+    post:
+      tags:
+        - "Bloqueio Judicial"
+      summary: Cadastra um bloqueio judicial utilizando numero da agencia e da conta corrente
+      parameters:
+        - in: path
+          name: NumeroAgencia
+          required: true
+          type: integer
+          description: Numero da agencia
+        - in: path
+          name: NumeroConta
+          required: true
+          type: string
+          description: Numero da conta corrente concatenado com dv
+        - in: body
+          name: BloqueioJudViewModel
+          schema:
+            $ref: '#/definitions/bloqueioJudViewModelIN'
+      description: Método para incluir bloqueio ou desbloqueio a partir do numero da agencia e conta
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Bloqueio cadastrado com sucesso
+          schema:
+            $ref: '#/definitions/R_BloqueiosJudiciais'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []
+  /bloqueios-judiciais/{CodigoBloqueioJudicial}:
+    get:
+      tags:
+        - "Bloqueio Judicial"
+      summary: Retorna o histórico de bloqueio judiciais atrelados a uma ordem
+      parameters:
+        - in: path
+          name: CodigoBloqueioJudicial
+          required: true
+          type: string
+          description: Codigo do bloqueio judicial a ser verificado.
+      description: Método para consultar se um bloqueio judicial foi de fato efetivado ao longo do dia
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Consulta efetuada com sucesso
+          schema:
+            $ref: '#/definitions/R_BloqueiosJudiciais'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []
+    put:
+      tags:
+        - "Bloqueio Judicial"
+      summary: Atualiza um bloqueio judicial utilizando código do bloqueio judicial
+      parameters:
+        - in: path
+          name: CodigoBloqueioJudicial
+          required: true
+          type: string
+          description: Codigo do bloqueio judicial a ser atualizado.
+        - in: body
+          name: BloqueioJudViewModel
+          schema:
+            $ref: '#/definitions/bloqueioJudViewModelPut'
+      description: Método para atualizar bloqueio judicial com base na PK da tabela de bloqueios judiciais
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Bloqueio Atualizado com sucesso
+          schema:
+            $ref: '#/definitions/R_BloqueiosJudiciais'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: [] 
+  /bloqueios-judiciais:
+    get:
+      tags:
+        - "Bloqueio Judicial"
+      summary: Retorna uma lista de bloqueios dentro dos filtros passados
+      parameters:
+        - in: query
+          name: DataInicio
+          required: true
+          type: string
+          description: Data Inicio da consulta formato YYYYMMDD
+        - in: query
+          name: DataFim
+          required: true
+          type: string
+          description: Data Fim da consulta formato YYYYMMDD
+        - in: query
+          name: Cliente
+          required: false
+          type: string
+          description: CodigoCliente (PK)
+        - in: query
+          name: Conta
+          required: false
+          type: string
+          description: CodigoConta (PK)
+        - in: query
+          name: CpfCnpj
+          required: false
+          type: string
+          description: CPF / CNPJ do cliente (Raiz ou completo)
+        - in: query
+          name: NumeroContaComDv
+          required: false
+          type: string
+          description: numero da conta corrente concatenado com DV
+        - in: query
+          name: NumeroAgencia
+          required: false
+          type: string
+          description: numero da agencia
+        - in: query
+          name: Protocolo
+          required: false
+          type: string
+          description: Numero do protocolo do bloqueio junto ao JUD 
+        - in: query
+          name: Pagina
+          required: false
+          type: integer
+          description: numero da página
+        - in: query
+          name: TamanhoPagina
+          required: false
+          type: integer
+          description: tamanho da pagina
+      description: Método para consultar uma lista de bloqueios judiciais 
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Consulta efetuada com sucesso
+          schema:
+            $ref: '#/definitions/R_Lista_DTOBloqueiosJudiciais'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []
+    post:
+      tags:
+        - "Bloqueio Judicial"
+      summary: Cadastra Bloqueios ou Desbloqueios Judiciais para uma empresa e/ou conta corrente
+      parameters:
+        - in: body
+          name: BloqueioJudViewModel
+          schema:
+            $ref: '#/definitions/bloqueioJudViewModelIN'
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Cadastro efetuado com sucesso
+          schema:
+            $ref: '#/definitions/R_BloqueiosJudiciais'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []      
+      
+      
+  /agencias/{NumeroAgencia}/contas-correntes/{NumeroContaCorrente}/pix:
+    post:
+      tags:
+        - Pix
+      summary: Cadastra um novo Pix
+      parameters:
+        - in: path
+          name: NumeroAgencia
+          required: true
+          type: string
+          description: Numero da Agencia sem DV
+        - in: path
+          name: NumeroContaCorrente
+          required: true
+          type: string
+          description: Numero da conta corrente
+        - in: body
+          name: PixApiMbLabsViewModel
+          schema:
+            $ref: '#/definitions/PixApiMbLabsViewModel'
+      responses:
+        '200':
+          description: Envio realizado com sucesso
+          schema:
+            $ref: '#/definitions/S_Retorno_200'
+        '400':
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        '500':
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []
+        
+  /agencias/{NumeroAgencia}/contas-correntes/{NumeroContaCorrente}/pix/decodifica-qrcode:
+    post:
+      tags:
+        - Pix
+      summary: Consultar Qrcode
+      description: Consulta um Qrcode no BACEN
+      parameters:
+        - in: path
+          name: NumeroAgencia
+          required: true
+          type: string
+          description: Numero da Agencia sem DV
+        - in: path
+          name: NumeroContaCorrente
+          required: true
+          type: string
+          description: Numero da conta corrente com DV
+        - in: body
+          name: QrCode
+          required: true
+          schema:
+            $ref: '#/definitions/ConsultaQrCodeViewModel'
+      responses:
+        '200':
+          description: Validação efetuada com sucesso
+          schema:
+            $ref: '#/definitions/S_Consulta_QrCode_200'
+        '400':
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        '500':
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []   
+      
+  /contas-correntes/saldoContasCorrentes:
+    get:
+      tags:
+        - "Transações"
+      summary: Retorna todos os saldos de contas correntes
+      parameters:
+        - in: query
+          name: TipoPessoa
+          required: false
+          type: string
+          description: Lista de inteiros, dominio interno da instituição
+        - in: query
+          name: CpfCnpj
+          required: false
+          type: string
+          description: CPF ou CNPJ do titular da conta
+        - in: query
+          name: ClassificacaoConta
+          required: false
+          type: string
+          description: Lista de inteiros, dominio interno da instituição
+      description: Saldos de conta corrente
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Consulta efetuada com sucesso
+          schema:
+            $ref: '#/definitions/R_SaldosContasCorrentes'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []
+  /contas-correntes/movimentos:
+    post:
+      tags:
+        - "Transações"
+      summary: Realiza um movimento na conta do cliente creditando ou debitando o valor, passando dentro do body os dados da conta corrente
+      parameters:
+        - in: body
+          name: MovimentoEmContaViewModel
+          schema:
+            $ref: '#/definitions/movimentoEmContaViewModel'
+      description: ok
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Lançamento criado com sucesso
+          schema:
+            $ref: '#/definitions/S_Sucesso'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []
+  '/agencias/{CodigoAgencia}/abrir-conta':
+    post:
+      tags:
+        - "Conta Corrente"
+      summary: "Abertura de conta corrente"
+      parameters:
+        - in: path
+          name: CodigoAgencia
+          required: true
+          type: integer
+          description: Codigo da agência cadastrada no sistema.
+        - in: body
+          name: AberturaContaCorrenteViewModel
+          schema:
+            $ref: '#/definitions/AberturaContaCorrenteViewModel'
+      responses:
+        200:
+          description: Contas Correntes encontradas com sucesso
+          schema:
+            $ref: '#/definitions/R_AberturaConta'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []
+  '/contas-correntes':
+    get:
+      tags:
+        - "Conta Corrente"
+      summary: "Busca todas as Contas Correntes"
+      responses:
+        200:
+          description: Contas Correntes encontradas com sucesso
+          schema:
+            $ref: '#/definitions/R_ListaContaCorrente'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []
+  /contas-correntes/{NumeroContaCorrente}:
+    get:
+      tags:
+        - "Conta Corrente"
+      summary: Retorna detalhes da conta corrente utilizando o número como consulta
+      parameters:
+        - in: path
+          name: NumeroContaCorrente
+          required: true
+          type: string
+          description: Número da conta corrente a ser consultada
+      description: Detalhes da conta corrente
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Consulta efetuada com sucesso
+          schema:
+            $ref: '#/definitions/R_ContaCorrente'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []
+  /clientes/{CpfCnpj}/contas-correntes:
+    get:
+      tags:
+        - "Conta Corrente"
+      summary: Retorna uma lista com todas as contas correntes do cliente, incluindo desativadas
+      parameters:
+      - name: CpfCnpj
+        in: path
+        description: Cpf/Cnpj do cliente.
+        required: true
+        type: string
+      responses:
+        200:
+          description: Consulta efetuada com sucesso
+          schema:
+            $ref: '#/definitions/S_ConsultaContasCorrentes'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []
+
+  /agencias/{NumeroAgencia}/contas-correntes/{NumeroContaCorrente}/chaves-pix/{ValorChave}:
+    get:
+      tags:
+        - Gestão de Chave Pix
+      summary: Consulta chave PIX
+      description: Consulta dados da conta vinculada a chave pix
+      parameters:
+        - in: path
+          name: NumeroAgencia
+          required: true
+          type: string
+          description: Numero da Agencia sem DV
+        - in: path
+          name: NumeroContaCorrente
+          required: true
+          type: string
+          description: Numero da conta corrente sem DV
+        - in: path
+          name: ValorChave
+          required: true
+          type: string
+          description: 'Chave Pix, exemplo: +5521963630000'
+      responses:
+        '200':
+          description: Validação efetuada com sucesso
+          schema:
+            $ref: '#/definitions/S_RetornoConsultaChavePix'
+        '400':
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        '500':
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []
+        
+  /contas-correntes/{CodigoContaCorrente}/chaves-pix/{ValorChave}:
+    get:
+      tags:
+        - Gestão de Chave Pix
+      summary: Consulta chave PIX através do código da conta corrente
+      description: Consulta dados da conta vinculada a chave Pix
+      parameters:
+        - in: path
+          name: CodigoContaCorrente
+          required: true
+          type: string
+          description: 'Código da conta corrente, exemplo: 8382'
+        - in: path
+          name: ValorChave
+          required: true
+          type: string
+          description: 'Chave Pix, exemplo: +5521963630000'
+      responses:
+        '200':
+          description: Validação efetuada com sucesso
+          schema:
+            $ref: '#/definitions/S_RetornoConsultaChavePix'
+        '400':
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        '500':
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []
+            
+            
+  /agencias/{NumeroAgencia}/contas-correntes/{NumeroContaCorrente}/chaves-pix:
+    post:
+      tags:
+        - Gestão de Chave Pix
+      summary: Criação de chave PIX
+      description: Cadastro de chave Pix no sistema
+      parameters:
+        - in: path
+          name: NumeroAgencia
+          required: true
+          type: string
+          description: Numero da Agencia sem DV
+        - in: path
+          name: NumeroContaCorrente
+          required: true
+          type: string
+          description: Numero da conta corrente sem DV
+        - in: body
+          name: CadastroChavePixViewModel
+          schema:
+            $ref: '#/definitions/CadastroChavePixViewModel'
+      responses:
+        '200':
+          description: Chave Pix criada com sucesso
+          schema:
+            $ref: '#/definitions/S_Retorno_200_cadastro_chave_pix'
+        '400':
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        '500':
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []
+        
+
+    get:
+      tags:
+        - Gestão de Chave Pix
+      summary: Consulta de chaves ativas
+      description: Lista chaves Pix ativas
+      parameters:
+        - in: path
+          name: NumeroAgencia
+          required: true
+          type: string
+          description: Numero da Agencia sem DV
+        - in: path
+          name: NumeroContaCorrente
+          required: true
+          type: string
+          description: Numero da conta corrente sem DV
+      responses:
+        '200':
+          description: Chave Pix criada com sucesso
+          schema:
+            $ref: '#/definitions/BuscaChavePixViewModel'
+        '400':
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        '500':
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []   
+  /chaves-pix/{codigoChaveEnderecamento}:
+    delete:
+      tags:
+        - Gestão de Chave Pix
+      summary: Cancelamento de chave PIX
+      description: Remove o vínculo do cliente com a chave PIX
+      parameters:
+        - in: path
+          name: codigoChaveEnderecamento
+          required: true
+          type: string
+          description: Código da chave endereçamento PIX
+      responses:
+        '200':
+          description: Chave Pix criada com sucesso
+          schema:
+            $ref: '#/definitions/S_Retorno_200'
+        '400':
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        '500':
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []   
+  /agencias/{NumeroAgencia}/contas-correntes/{NumeroContaCorrente}/reivindicacoes:
+    post:
+      tags:
+        - Gestão de Chave Pix
+      summary: Reivindicação de chave PIX
+      description: >
+        Endpoint para reivindicar posse ou portabilidade de chave PIX <br>
+
+        Não é possível solicitar reivindicação de posse ou portabilidade de
+        chaves do tipo aleatória.
+      parameters:
+        - in: path
+          name: NumeroAgencia
+          required: true
+          type: string
+          description: Numero da Agencia sem DV
+        - in: path
+          name: NumeroContaCorrente
+          required: true
+          type: string
+          description: Numero da conta corrente sem DV
+        - in: body
+          name: CadastroReivindicacaoChavePixViewModel
+          schema:
+            $ref: '#/definitions/CadastroReivindicacaoChavePixViewModel'
+      responses:
+        '200':
+          description: Validação efetuada com sucesso
+          schema:
+            $ref: '#/definitions/S_Retorno_200'
+        '400':
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        '500':
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []
+        
+  /reivindicacoes/{codigoReivindicacao}/aceitar:
+    patch:
+      tags:
+        - Gestão de Chave Pix
+      summary: Aceita reivindicação de posse ou portabilidade de chave PIX
+      description: Endpoint de aceitar a reivindicação de posse ou portabilidade de chave PIX
+      parameters:
+        - in: path
+          name: codigoReivindicacao
+          required: true
+          type: string
+          description: Código da reivindicação de posse ou portabilidade
+      responses:
+        '200':
+          description: Validação efetuada com sucesso
+          schema:
+            $ref: '#/definitions/S_Retorno_200'
+        '400':
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        '500':
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []
+  /reivindicacoes/{codigoReivindicacao}/recusar:
+    patch:
+      tags:
+        - Gestão de Chave Pix
+      summary: Recusa reivindicação de posse ou portabilidade de chave PIX
+      description: Endpoint de recusar a reivindicação de posse ou portabilidade de chave PIX
+      parameters:
+        - in: path
+          name: codigoReivindicacao
+          required: true
+          type: string
+          description: Código da reivindicação de posse ou portabilidade
+      responses:
+        '200':
+          description: Validação efetuada com sucesso
+          schema:
+            $ref: '#/definitions/S_Retorno_200'
+        '400':
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        '500':
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []
+
+
+  /contas-correntes/{CodigoContaCorrente}/extrato:
+    get:
+      tags:
+        - "Transações"
+      summary: Retorna extrato de conta corrente
+      parameters:
+        - in: path
+          name: CodigoContaCorrente
+          required: true
+          type: string
+          description: Codigo de conta corrente a ser verificado.
+        - in: query
+          name: DataInicio
+          required: true
+          type: string
+          description: Data Inicio da consulta formato YYYYMMDD
+        - in: query
+          name: DataFim
+          required: true
+          type: string
+          description: Data Fim da consulta formato YYYYMMDD
+      description: Extrato de conta corrente
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Consulta efetuada com sucesso
+          schema:
+            $ref: '#/definitions/R_Extrato'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []
+  /convenios/{CodigoContaConvenio}/transferencias:
+    post:
+      tags:
+        - "Transações"
+      summary: Cadastro de TED, DOC ou transferencia interna
+      operationId: Transferencia
+      parameters:
+        - in: path
+          name: CodigoContaConvenio
+          required: true
+          type: string
+          description: Codigo do convênio a ser cadastrado transação.
+        - in: body
+          name: TransferenciaViewModel
+          schema:
+            $ref: '#/definitions/TransferenciaViewModel'
+      responses:
+        200:
+          description: Envio realizado com sucesso
+          schema:
+            $ref: '#/definitions/S_Sucesso'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []
+  '/convenios/{CodigoContaConvenio}/transferencias/{CodigoTransacao}':
+    put:
+      tags:
+        - "Transações"
+      summary: Alteração de TED, DOC ou transferencia interna
+      parameters:
+        - in: path
+          name: CodigoContaConvenio
+          required: true
+          type: string
+          description: Codigo do convênio a ser cadastrado transação.
+        - in: path
+          name: CodigoTransacao
+          required: true
+          type: string
+          description: Codigo da transação a ser alterada.
+        - in: body
+          name: TransferenciaViewModel
+          schema:
+            $ref: '#/definitions/TransferenciaViewModel'
+      responses:
+        200:
+          description: Envio realizado com sucesso
+          schema:
+            $ref: '#/definitions/S_Sucesso'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []
+    get:
+      tags:
+        - "Transações"
+      summary: Consulta detalhes de uma transferência utilizando código da transação
+      parameters:
+        - in: path
+          name: CodigoContaConvenio
+          required: true
+          type: string
+          description: Codigo do convênio a ser cadastrado transação.
+        - in: path
+          name: CodigoTransacao
+          required: true
+          type: string
+          description: Codigo da transação a ser alterada.
+      responses:
+        200:
+          description: Transferência encontrada com sucesso
+          schema:
+            $ref: '#/definitions/R_Transferencia'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []
+  '/convenios/{CodigoContaConvenio}/lancamento/{CodigoLancamento}':
+    get:
+      tags:
+        - "Transações"
+      summary: Consulta de dados de remetente e destinatario de um lançamento efetivado em conta corrente
+      parameters:
+        - in: path
+          name: CodigoContaConvenio
+          required: true
+          type: integer
+          description: Codigo do convênio a ser consultada o lancamento
+        - in: path
+          name: CodigoLancamento
+          required: true
+          type: integer
+          description: Codigo do lancamento
+      responses:
+        200:
+          description: Transferência encontrada com sucesso
+          schema:
+            $ref: '#/definitions/R_Lancamento'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []
+  '/transacoes':
+    get:
+      tags:
+        - "Transações"
+      summary: Consulta de transações utilizando filtros
+      parameters:
+        - in: query
+          name: DataInicio
+          required: true
+          type: string
+          description: Data Inicio da consulta formato YYYYMMDD
+        - in: query
+          name: DataFim
+          required: true
+          type: string
+          description: Data Fim da consulta formato YYYYMMDD
+        - in: query
+          name: TipoTransacao
+          required: false
+          type: integer
+          enum:
+            - 1
+            - 2
+            - 3
+          description: "1 - DOC, 2 - TED, 3 - TRANSFERENCIA"
+        - in: query
+          name: Conta
+          required: false
+          type: string
+          description: Número da conta corrente com dv
+        - in: query
+          name: Convenio
+          required: false
+          type: string
+          description: Número do convênio
+        - in: query
+          name: Status
+          required: false
+          type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+            - 100
+          description: "Status da transação: 0 - Pendente Aprovação, 1 - Parcialmente Aprovado, 2 - Aprovada, 3 - Rejeitada, 4 - Cancelada, 5 - Pago, 6 - Aguardando Saldo, 7 - Aguardando Liquidante, 100 - Estornada"
+        - in: query
+          name: Pagina
+          type: integer
+        - in: query
+          name: TamanhoPagina
+          type: integer
+      responses:
+        200:
+          description: Transações encontradas com sucesso
+          schema:
+            $ref: '#/definitions/R_Transacoes'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []
+    delete:
+      tags:
+        - "Transações"
+      summary: Cancela uma transação de forma assíncrona
+      description: "Retorna sucesso e processa o cancelamento das agendas em background."
+      parameters:
+        - in: body
+          name: CodigosAgendas
+          required: true
+          schema: 
+            $ref: '#/definitions/ListaCodigosAgendasDTO'
+      responses:
+        200:
+          description: Cancelamento realizado com sucesso
+          schema:
+            $ref: '#/definitions/S_RetornoCancelamentoTransacoesAssincrono_200'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: [] 
+  '/transacoes/{CodigoAgenda}':
+    delete:
+      tags:
+        - "Transações"
+      summary: Cancela uma transação de forma síncrona
+      parameters:
+        - in: path
+          name: CodigoAgenda
+          required: true
+          type: string
+      responses:
+        200:
+          description: Cancelamento realizado com sucesso
+          schema:
+            $ref: '#/definitions/S_Sucesso'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+      - JWT: []
+  '/convenios/{CodigoContaConvenio}/transferencia/{CodigoAgenda}':
+    get:
+      tags:
+        - "Transações"
+      summary: Busca uma Transação com base no seu Convênio e Agenda
+      parameters:
+        - in: path
+          name: CodigoContaConvenio
+          required: true
+          type: integer
+          description: Código do Convênio do qual a Transferência faz parte
+        - in: path
+          name: CodigoAgenda
+          required: true
+          type: integer
+          description: Código da Agenda da qual a Transferência faz parte
+      responses:
+        200:
+          description: Transferência encontrada com sucesso
+          schema:
+            $ref: '#/definitions/R_BuscaTransferencia'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []
+  '/contas-correntes/extrato-detalhado':
+    get:
+      tags:
+        - "Transações"
+      summary: "Busca movimentos de todas as contas correntes de forma paginada"
+      parameters:
+        - in: query
+          name: DataInicio
+          required: true
+          type: string
+          description: Data início da consulta formato YYYYMMDD
+        - in: query
+          name: DataFim
+          required: true
+          type: string
+          description: Data fim da consulta formato YYYYMMDD
+        - in: query
+          name: NumeroAgencia
+          type: string
+          description: Número da agência
+        - in: query
+          name: NumeroContaCorrenteComDv
+          type: string
+          description: Número da conta corrente com dígito verificador
+        - in: query
+          name: Pagina
+          type: integer
+        - in: query
+          name: TamanhoPagina
+          type: integer
+      responses:
+        200:
+          description: Conta Corrente encontrada com sucesso
+          schema:
+            $ref: '#/definitions/R_ExtratoDetalhado'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []
+  '/convenios/{CodigoConvenio}/transacoes/{CodigoAgenda}/estornar':
+    put:
+      tags:
+        - "Transações"
+      summary: "Realizar o estorno de uma transacao"
+      parameters:
+        - in: path
+          name: CodigoConvenio
+          required: true
+          type: integer
+          description: codigo do convênio
+        - in: path
+          name: CodigoAgenda
+          required: true
+          type: integer
+          description: codigo da Agenda
+      responses:
+        200:
+          description: Conta Corrente encontrada com sucesso
+          schema:
+            $ref: '#/definitions/S_Sucesso'
+        400:
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/S_Erro_400'
+        500:
+          description: Erro interno no servidor
+          schema:
+            $ref: '#/definitions/S_Erro_500'
+      security:
+        - JWT: []
+securityDefinitions:
+  JWT:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+definitions:
+  S_ConsultaContasCorrentes:
+      type: object
+      properties:
+        Contexto:
+          $ref: '#/definitions/ContasCorrentesViewModel'
+        Resultado:
+          type: integer
+          description: 0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao
+        StatusResposta:
+          type: string
+          default: Sucesso
+        Mensagens:
+          type: array
+          items:
+            type: string
+        CodigosMensagens:
+          type: array
+          items:
+            type: string
+  ContasCorrentesViewModel:
+      type: array
+      items:
+        $ref: '#/definitions/ContaCorrenteSimplificadaViewModel'
+  R_AberturaConta:
+    type: object
+    properties:
+      Contexto:
+        type: array
+        items: 
+          $ref: '#/definitions/RespostaAberturaContaCorrenteViewModel'
+      Resultado:
+        type: "integer"
+        default: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        default: "Sucesso"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Operação realizada com sucesso."
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "operacaoRealizadaComSucesso"
+  RespostaAberturaContaCorrenteViewModel:
+    type: object
+    properties:
+      CodigoAgencia:
+        type: integer
+      CodigoPlano:
+        type: integer
+      CodigoContaCorrente:
+        type: integer
+      CodigoConvenio:
+        type: integer
+      NumeroAgencia:
+        type: string
+      DVAgencia:
+        type: string
+      NumeroContaCorrente:
+        type: integer
+      DVContaCorrente:
+        type: string
+      NumeroContaCorrenteCompleto:
+        type: string
+      NumeroBanco:
+        type: integer
+      Iban:
+        type: string
+      PermiteSaldoNegativo:
+        type: boolean
+        default: false
+      Principal:
+        type: boolean
+        default: false
+      ContaIF:
+        type: boolean
+        default: false
+      TipoConta:
+        type: integer
+        enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+        description: "1 - ContaCorrente, 2 - Conta Poupança, 3 - Conta Pagamento, 4 - Conta Investimento, 5 - Conta Salário"
+      TipoPessoa:
+        type: integer
+        enum:
+          - 1
+          - 2
+        description: "1 - Pessoa Física, 2 - Pessoa Jurídica"
+      RelacionamentosClientes:
+        type: array
+        items:
+          $ref: '#/definitions/RelacionamentoClienteViewModel'
+  AberturaContaCorrenteViewModel:
+    type: object
+    properties:
+      CodigoPlano:
+        type: integer
+      PermiteSaldoNegativo:
+        type: boolean
+        default: false
+      Principal:
+        type: boolean
+        default: false
+      ContaIF:
+        type: boolean
+        default: false
+      TipoConta:
+        type: integer
+        enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+        description: "1 - ContaCorrente, 2 - Conta Poupança, 3 - Conta Pagamento, 4 - Conta Investimento, 5 - Conta Salário"
+      TipoPessoa:
+        type: integer
+        enum:
+          - 1
+          - 2
+        description: "1 - Pessoa Física, 2 - Pessoa Jurídica"
+      RelacionamentosClientes:
+        type: array
+        items:
+          $ref: '#/definitions/RelacionamentoClienteViewModel'
+    required:
+      - TipoConta
+      - TipoPessoa
+  RelacionamentoClienteViewModel:
+    type: object
+    properties:
+      CpfCnpj:
+        type: string
+      TipoRelacionamento:
+        type: integer
+        enum:
+          - 1
+          - 2
+          - 3
+        description: "1 - Titular, 2 - Cotitular, 3 - Procurador"
+    required:
+      - CpfCnpj
+      - TipoRelacionamento
+  ContaCorrenteSimplificadaViewModel:
+    type: object
+    properties:
+      CpfCnpj:
+        type: string
+      CodigoContaCorrente:
+        type: integer
+      CodigoAgencia:
+        type: integer
+      NumeroAgencia:
+        type: string
+      DVAgencia:
+        type: string
+      NumeroContaCorrente:
+        type: string
+      DVContaCorrente:
+        type: string
+      Desativado:
+        type: boolean
+      NumeroContaCorrenteCompleto:
+        type: string
+      Iban:
+        type: string
+  R_Transacoes:
+    type: object
+    properties:
+      Contexto:
+        type: array
+        items:
+          $ref: '#/definitions/TransacaoViewModel'
+      Resultado:
+        type: "integer"
+        default: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        default: "Sucesso"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Operação realizada com sucesso."
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "operacaoRealizadaComSucesso"
+  R_Lancamento:
+    type: object
+    properties:
+      Contexto:
+        $ref: '#/definitions/TransacaoViewModel'
+      Resultado:
+        type: "integer"
+        default: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        default: "Sucesso"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Operação realizada com sucesso."
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "operacaoRealizadaComSucesso"
+  TransacaoViewModel:
+    type: object
+    properties:
+      Codigo:
+        type: number
+        description: Código da transação
+      CnpjPagador:
+        type: string
+      NomePagador:
+        type: string
+      BancoPagador:
+        type: integer
+      NomeBancoPagador:
+        type: string
+      AgenciaPagador:
+        type: string
+      ContaPagador:
+        type: string
+      DVContaPagador:
+        type: string
+      NomeConvenioPagador:
+        type: string
+      AgenciaFavorecida:
+        type: string
+      BancoFavorecido:
+        type: integer
+      ContaFavorecida:
+        type: string
+      CNPJCPFFavorecido:
+        type: string
+      DVContaFavorecida:
+        type: string
+      NomeFavorecido:
+        type: string
+      TipoContaFavorecida:
+        type: integer
+      TipoPessoa:
+        type: integer
+      Status:
+        type: integer
+      CodigoServico:
+        type: integer
+      Valor:
+        type: number
+        format: decimal
+      Finalidade:
+        type: integer
+      Referencia:
+        type: string
+      DataTransferencia:
+        type: string
+      CodigoAutenticacao:
+        type: string
+      DataHoraCriacao:
+        type: string
+      Recorrencia:
+        type: boolean
+      EndToEndId:
+        type: string
+  R_ListaContaCorrente:
+    type: object
+    properties:
+      Contexto:
+        type: array
+        items: 
+          $ref: '#/definitions/ContaCorrenteViewModel'
+      Resultado:
+        type: "integer"
+        default: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        default: "Sucesso"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Operação realizada com sucesso."
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "operacaoRealizadaComSucesso"
+  R_Transferencia:
+    type: object
+    properties:
+      Contexto:
+        $ref: '#/definitions/ConsultaTransferenciaViewModel'
+      Resultado:
+        type: "integer"
+        default: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        default: "Sucesso"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Operação realizada com sucesso."
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "operacaoRealizadaComSucesso"
+  R_BuscaTransferencia:
+    type: object
+    properties:
+      Contexto:
+        $ref: '#/definitions/BuscaTransferenciaViewModel'
+      Resultado:
+        type: "integer"
+        default: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        default: "Sucesso"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Operação realizada com sucesso."
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "operacaoRealizadaComSucesso"
+  BuscaTransferenciaViewModel:
+    type: object
+    properties:
+      Codigo:
+        type: integer
+      Beneficiario:
+        $ref: '#/definitions/BeneficiarioViewModel'
+      Debito:
+        $ref: '#/definitions/DebitoViewModel'
+      Status:
+        type: integer
+      TipoTransacao:
+        type: integer
+        enum:
+          - 1
+          - 2
+          - 3
+        description: "1 - DOC, 2 - TED, 3 - TRANSFERENCIA"
+      Valor:
+        type: number
+      Finalidade:
+        type: integer
+      DescricaoFinalidade:
+        type: string
+      Referencia:
+        type: string
+      DataTransferencia:
+        type: string
+        format: date
+        pattern: "DD/MM/YYYY"
+        example: "25/12/2023"
+      CodigoAutenticacao:
+        type: string
+      DataHoraCriacao:
+        type: string
+        example: "25/12/2023 14:44:13"
+      Recorrencia:
+        $ref: '#/definitions/RecorrenciaViewModel'
+      Anexo:
+        $ref: '#/definitions/Anexo'
+      Nota:
+        type: string
+      InfoExtra1:
+        type: string
+      InfoExtra2:
+        type: string
+      InfoExtra3:
+        type: string
+      InfoExtra4:
+        type: string
+      InfoExtra5:
+        type: string
+  RecorrenciaViewModel:
+    type: object
+    properties:
+      CodigoRecorrencia:
+        type: integer
+      Frequencia:
+        type: integer
+        enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 99
+        description: "1 - Diario, 2 - Semanal, 3 - Mensal, 4 - Anual, 99 - Indefinido"
+      DataFinal:
+        type: string
+        format: date
+        pattern: "DD/MM/YYYY"
+        example: "25/12/2023"
+      Repeticoes:
+        type: integer
+  Anexo:
+    type: object
+    properties:
+      CodigoAnexo:
+        type: integer
+      CodigoAgenda:
+        type: integer
+      CodigoLancamento:
+        type: integer
+      Descricao:
+        type: string
+      ArquivoAnexado:
+        type: string
+        format: byte
+      TipoAnexoDM:
+        type: string
+      NomeArquivo:
+        type: string
+      Diretorio:
+        type: string
+  ConsultaTransferenciaViewModel:
+    type: object
+    properties:
+      Beneficiario:
+        $ref: '#/definitions/BeneficiarioViewModel'
+      Debito:
+        $ref: '#/definitions/DebitoViewModel'
+      TipoTransacao:
+        type: integer
+        enum:
+          - 1
+          - 2
+          - 3
+        description: "1 - DOC, 2 - TED, 3 - TRANSFERENCIA"
+      Valor: 
+        type: number
+        format: double
+        example: 123.45
+      Finalidade:
+        type: integer
+      DescricaoFinalidade:
+        type: string
+      Referencia:
+        type: string
+      DataTransferencia:
+        type: string
+        format: date
+        pattern: "DD/MM/YYYY"
+        example: "07/07/2023"
+      CodigoAutenticacao:
+        type: string
+  DebitoViewModel:
+    type: object
+    properties:
+      Cnpj:
+        type: string
+      NomePagador:
+        type: string
+      NumeroBanco:
+        type: integer
+      Banco:
+        type: string
+      NomeBanco:
+        type: string
+      Agencia:
+        type: string
+      Conta:
+        type: string
+      DV:
+        type: string
+      CodigoConvenio:
+        type: integer
+      NomeConvenio:
+        type: string
+  TransferenciaViewModel:
+    type: object
+    properties:
+      Beneficiario:
+          $ref: '#/definitions/BeneficiarioViewModel' 
+      TipoTransacao:
+        type: integer
+        enum:
+          - 1
+          - 2
+          - 3
+        description: "1 - DOC, 2 - TED, 3 - TRANSFERENCIA"
+      Valor: 
+        type: number
+        format: double
+        example: 123.45
+      Finalidade:
+        type: integer
+      Referencia:
+        type: string
+      DataTransferencia:
+        type: string
+        format: date
+        pattern: "DD/MM/YYYY"
+        example: "07/07/2023"
+  BeneficiarioViewModel:
+    type: object
+    properties:
+      Banco:
+        type: integer
+        example: 341
+      Agencia:
+        type: string
+        example: 0456
+      Conta:
+        type: string
+        example: 150455
+      Dv:
+        type: string
+        example: 1
+      TipoConta:
+        type: integer
+        enum:
+          - 1
+          - 2
+          - 3
+        description: "1 - Conta Corrente, 2 - Conta Poupança, 3 - Conta Pagamento"
+      TipoPessoa:
+        type: integer
+        enum:
+          - 1
+          - 2
+        description: "1 - PF, 2 - PJ"
+      CpfCnpj:
+        type: string
+        example: "99999999999"
+        minLength: 11
+        maxLength: 14
+  ExtratoConsolidadoViewModel:
+    type: object
+    properties:
+      SaldoAnterior:
+        type: number
+        example: 1500.00
+      ExtratosDiarios:
+        type: array
+        items:
+          $ref: '#/definitions/ExtratoDiarioContaViewModel'
+  ExtratoDiarioContaViewModel:
+    type: object
+    properties:
+      Data:
+        type: string
+        example: "01/01/2021"
+      SaldoNoDia:
+        type: number
+        example: 2000.00
+      DetalhamentoExtratoDiario:
+        type: array
+        items:
+          $ref: '#/definitions/DetalheDiarioViewModel'
+  DetalheDiarioViewModel:
+    type: object
+    properties:
+      Data:
+        type: string
+        example: "01/01/2021"
+      DataHora:
+        type: string
+        example: "01/01/2021 14:44:13"
+      Descricao:
+        type: string
+        example: "TED Paula-Resgate Fundo"
+      Servico:
+        type: string
+        example: "TED"
+      Valor:
+        type: number
+        example: 500.00
+      CodigoLancamento:
+        type: integer
+        example: 121032
+  R_SaldosContasCorrentes:
+    type: array
+    items:
+      $ref: '#/definitions/SaldosContasCorrentesViewModel'
+  SaldosContasCorrentesViewModel:
+    type: object
+    properties:
+      CPFCNPJ:
+        type: "string"
+        example: "12345678901"
+      CPFCNPJFormatado:
+        type: "string"
+        example: "123.456.789-01"
+      Data:
+        type: "string"
+        example: "dd/mm/yyyy"
+      ContaCorrente:
+        type: "string"
+        example: "000001-0"
+      Agencia:
+        type: "string"
+        example: "0001"
+      NomeTitular:
+        type: "string"
+        example: "Nome do Titular"
+      ValorSaldoTotal:
+        type: number
+        example: 500.00
+      ValorSaldoDisponivel:
+        type: number
+        example: 50.00
+      ValorSaldoBloqueado:
+        type: number
+        example: 450.00
+  R_ExtratoDetalhado:
+    type: object
+    properties:
+      Contexto:
+        $ref: '#/definitions/ExtratoDetalhadoPaginado'
+      Resultado:
+        type: "integer"
+        default: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        default: "Sucesso"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Operação realizada com sucesso."
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "operacaoRealizadaComSucesso"
+  ExtratoDetalhadoPaginado:
+    type: object
+    properties:
+      Dados:
+        type: array
+        items:
+          $ref: '#/definitions/ExtratoDetalhadoViewModel'
+      TotalRegistros:
+        type: integer
+      TamanhoPagina:
+        type: integer
+      Pagina:
+        type: integer
+  ExtratoDetalhadoViewModel:
+    type: object
+    properties:
+      DataTransacao:
+        type: string
+      Descricao:
+        type: string
+      Valor:
+        type: number
+        format: decimal
+      CodigoLancamento:
+        type: integer
+        format: int64
+      CodigoAgenda:
+        type: string
+        format: int64
+      Servico:
+        type: string
+      TipoLinha:
+        type: string
+      CnpjTitular:
+        type: string
+      NomeTitular:
+        type: string
+      AgenciaTitular:
+        type: string
+      NumeroContaCorrenteTitular:
+        type: string
+      DVContaCorrenteTitular:
+        type: string
+      StatusAgenda:
+        type: string
+      AgenciaDestinatario:
+        type: string
+      ContaDestinatario:
+        type: string
+      CpfCnpjDestinatario:
+        type: string
+      DVAgenciaDestinatario:
+        type: string
+      DVContaDestinatario:
+        type: string
+      ISPBBancoDestinatario:
+        type: string
+      NomeBancoDestinatario:
+        type: string
+      NomeDestinatario:
+        type: string
+      NumeroBancoDestinatari:
+        type: string
+      AgenciaRemetente:
+        type: string
+      ContaRemetente:
+        type: string
+      CpfCnpjRemetente:
+        type: string
+      DVContaRemetente:
+        type: string
+      NomeRemetente:
+        type: string
+  R_ContaCorrente:
+    type: object
+    properties:
+      Contexto:
+        $ref: '#/definitions/ContaCorrenteViewModel'
+      Resultado:
+        type: "integer"
+        default: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        default: "Sucesso"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Operação realizada com sucesso."
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "operacaoRealizadaComSucesso"
+  ContaCorrenteViewModel:
+    type: object
+    properties:
+      CodigoConta:
+        type: integer
+      CodigoAgencia:
+        type: integer
+      CodigoEmpresa:
+        type: integer
+      NumeroConta:
+        type: string
+      NumeroContaCompleto:
+        type: string
+      DigitoVerificador:
+        type: string
+      DataCadastro:
+        type: string
+      DataDesativacao:
+        type: string
+      PermiteSaldoNegativo:
+        type: boolean
+      Desativado:
+        type: boolean
+      NomeAgencia:
+        type: string
+      NumeroAgencia:
+        type: string
+      DVAgencia:
+        type: string
+      NumeroBanco:
+        type: string
+      NomeEmpresa:
+        type: string
+      CodigoCliente:
+        type: number
+      TipoConta:
+        type: string
+      TipoPessoa:
+        type: string
+      DescricaoClassificacaoContaCorrente:
+        type: string
+      ContaIF:
+        type: boolean
+      Iban:
+        type: string
+      CNPJCPFTitular:
+        type: string
+      CNPJCPFTitularFormatado:
+        type: string
+      NomeTitular:
+        type: string
+      Convenios:
+        type: array
+        items:
+          $ref: '#/definitions/ConvenioViewModel'
+      RelacionamentosClientes:
+        type: array
+        items:
+          $ref: '#/definitions/RelacionamentoViewModel'
+  RelacionamentoViewModel:
+    type: object
+    properties:
+      CodigoRelacionamento:
+        type: integer
+      DataInicio:
+        type: string
+      DataFim:
+        type: string
+      CodigoPessoa:
+        type: number
+      Desativado:
+        type: boolean
+      NomePessoa:
+        type: string
+      NomeReduzido:
+        type: string
+      CpfCnpj:
+        type: string
+      TipoRelacionamento:
+        type: string
+  ConvenioViewModel:
+    type: object
+    properties:
+      CodigoContaConvenio:
+        type: integer
+      CodigoPlano:
+        type: integer
+      NomeConvenio:
+        type: string
+      DataDesativacao:
+        type: string
+      Desativado:
+        type: boolean
+      TipoCustomizacao:
+        type: string
+      ValorCustomizacao:
+        type: string
+      DataInicioCustomizacao:
+        type: string
+      DataFimCustomizacao:
+        type: string
+      ConsolidacaoDebitos:
+        type: string
+      Frequencia:
+        type: string
+      DiaMes:
+        type: string
+      DiaSemana:
+        type: string
+      DataNaoUtil:
+        type: string
+      AutorizacaoArquivos:
+        type: boolean
+      Status:
+        type: string
+      CadastraBeneficiario:
+        type: boolean
+      ValidaDuplicidade:
+        type: boolean
+      CobraDesencaixe:
+        type: boolean
+      ValidacaoBoletoData:
+        type: string
+      ValidacaoBoletoValor:
+        type: string
+  R_Extrato:
+    type: object
+    properties:
+      Contexto:
+        $ref: '#/definitions/ExtratoConsolidadoViewModel'
+      Resultado:
+        type: "integer"
+        default: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        default: "Sucesso"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Operação realizada com sucesso."
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "operacaoRealizadaComSucesso"
+  R_Lista_BloqueiosJudiciais:
+    type: object
+    properties:
+      Contexto:
+        type: array
+        items:
+          $ref: '#/definitions/bloqueioJudViewModel'
+      Resultado:
+        type: "integer"
+        default: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        default: "Sucesso"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Operação realizada com sucesso."
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "operacaoRealizadaComSucesso"
+  R_Lista_DTOBloqueiosJudiciais:
+    type: object
+    properties:
+      Contexto:
+        type: array
+        items:
+          $ref: '#/definitions/bloqueioJudDTO'
+      Resultado:
+        type: "integer"
+        default: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        default: "Sucesso"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Operação realizada com sucesso."
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "operacaoRealizadaComSucesso"
+  R_BloqueiosJudiciais:
+    type: object
+    properties:
+      Contexto:
+        $ref: '#/definitions/bloqueioJudViewModel'
+      Resultado:
+        type: "integer"
+        default: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        default: "Sucesso"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "operacaoRealizadaComSucesso"
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "operacaoRealizadaComSucesso"
+  bloqueioJudViewModel:
+    type: object
+    properties:
+      CodigoBloqueioJudicial:
+        type: integer
+        example: 123
+      CodigoConta:
+        type: integer
+        example: 456
+        description: PK da tabela de Contas
+      Conta:
+        type: string
+        example: '01234567890'
+        description: Numero da Conta Corrente com DV
+      NumeroAgencia:
+        type: string
+        example: '0001'
+        description: Numero da agencia da conta corrente
+      DataOrdem:
+        type: string
+        example: "dd/mm/yyyy hh:mm:ss"
+      TipoOrdem:
+        type: string
+        example: "B"
+      DescricaoOrdem:
+        type: string
+        example: "Protocolo: 2023010100025896325"
+      ValorOrdem:
+        type: number
+        example: 25000.00
+      TipoOrdemDescricao:
+        type: string
+        example: "Bloqueio"
+      ValorPendenteEfetivacao:
+        type: number
+        example: 15000.00
+      ValorEfetivado:
+        type: number
+        example: 10000.00
+      Protocolo:
+        type: string            
+      BloqueioPersistente:
+        type: boolean
+        example: true
+        description: Caso true habilita teimosinha para aplicação do bloqueio. Caso false efetua o bloqueio do valor disponível apenas no momento do cadastro
+      BloqueiosJudiciaisHistoricos:
+        type: array
+        items:
+          type: object
+          properties:
+            DataEfetivacao:
+              type: string
+              example: "dd/mm/yyyy hh:mm:ss"
+            Valor:
+              type: number
+              example: 25000.00
+            CodigoConta:
+              type: number
+              example: 456
+            CpfCnpj:
+              type: string
+              example: "48996864000131"        
+            NumeroConta:
+              type: string
+              example: "302185"
+            DvConta:
+              type: string
+              example: "7"
+            NumeroAgencia:
+              type: string
+              example: "0001"
+    required:  
+      - DataOrdem
+      - TipoOrdem
+      - ValorOrdem
+  bloqueioJudViewModelPut:
+    type: object
+    properties:
+      DescricaoOrdem:
+        type: string
+        example: "Ordem 1"
+      ValorOrdem:
+        type: number
+        example: 25000.00
+    required:  
+      - ValorOrdem    
+  bloqueioJudViewModelIN:
+    type: object
+    properties:
+      DataOrdem:
+        type: string
+        example: "dd/mm/yyyy hh:mm:ss"
+      TipoOrdem:
+        type: string
+        example: "B"
+      CpfCnpj:
+        type: string
+        example: "48996864000131"
+        description: "Cpf ou Cnpj do cliente. A API também aceita o CNPJ raiz da empresa. Nesse caso, tentará aplicar o bloqueio a todas as empresas com mesmo CNPJ raiz"
+      CodigoConta:
+        type: number
+        example: 100
+        description: "Código da chave primária da tabela de contas correntes do sistema"
+      DescricaoOrdem:
+        type: string
+        example: "Protocolo: 2023010100025896325"
+      ValorOrdem:
+        type: number
+        example: 25000.00
+      Protocolo:
+        type: string      
+      BloqueioPersistente:
+        type: boolean
+        example: true
+        description: Caso true habilita teimosinha para aplicação do bloqueio. Caso false efetua o bloqueio do valor disponível apenas no momento do cadastro 
+    required:  
+      - DataOrdem
+      - TipoOrdem
+      - ValorOrdem
+  bloqueioJudDTO:
+    type: object
+    properties:
+      Cliente:
+        type: string
+        example: "Rui Barbosa"
+      CodigoConta:
+        type: integer
+        example: 456
+      Conta:
+        type: string
+        example: "000001-9"
+      CNPJ_CPF:
+        type: string
+        example: "48996864000131"
+      DataBloqueioDesbloqueio:
+        type: string
+        example: "04/04/2023 12:00:02"
+      SaldoBloqueadoDesbloqueado:
+        type: number
+        example: 5000.00
+      SaldoABloquear:
+        type: number
+        example: 20000.00
+      ValorOrdem:
+        type: number
+        example: 25000.00
+      TipoOrdemDescricao:
+        type: string
+        example: "Bloqueio"
+      Descricao:
+        type: string
+        example: "Protocolo: 2023010100025896325"
+      Efetivado:
+        type: boolean
+        example: true
+      Protocolo:
+        type: string
+      BloqueioPersistente:
+        type: boolean
+        example: true
+        description: Caso true habilita teimosinha para aplicação do bloqueio. Caso false efetua o bloqueio do valor disponível apenas no momento do cadastro         
+  movimentoEmContaViewModel:
+    type: object
+    properties:
+      Agencia:
+        type: string
+        example: "0001"
+      ContaCorrente:
+        type: string
+        example: "00065"
+      DvConta:
+        type: string
+        example: "4"
+      DataMovimento:
+        type: string
+        example: "YYYYMMDD"
+      Descricao:
+        type: string
+      Valor:
+        type: number
+        example: 1000.52
+      EventoContabil:
+        type: integer
+        example: 203
+      DebitoCredito:
+        type: string
+        example: "D"
+    required:  
+      - DataMovimento
+      - Valor
+  S_Sucesso:
+    type: object
+    properties:
+      Resultado:
+        type: "integer"
+        default: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        default: "Sucesso"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Operação realizada com sucesso."
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "operacaoRealizadaComSucesso"
+  S_Erro_500:
+    type: object
+    properties:
+      Contexto:
+        type: string
+        example: null
+      Resultado:
+        type: "integer"
+        default: 2
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        example: "Erro"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Erro desconhecido. Consulte o Log para mais informações!"
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "erroPadrao"
+  S_Erro_400:
+    type: object
+    properties:
+      Contexto:
+        type: string
+        default: "null"
+      Resultado:
+        type: "integer"
+        default: 2
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        example: "Erro"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Erro de validação em algum campo ou regra de negócio"
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "erroValidacaoCampo"
+  ListaCodigosAgendasDTO:
+    type: object
+    properties:
+      CodigosAgendas:
+        type: array
+        items:
+          type: integer
+        example: [210, 223, 3, 41]
+  S_RetornoCancelamentoTransacoesAssincrono_200:
+    type: object
+    properties:
+      Resultado:
+        type: "integer"
+        example: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: "0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao"
+      StatusResposta:
+        type: "string"
+        example: "Sucesso"
+      CodigosMensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "AgendasEmProcessoCancelamento"
+      Mensagens:
+        type: "array"
+        items:
+          type: "string"
+          example: "Agendas Em Processo de Cancelamento"      
+  PixApiMbLabsViewModel:
+    type: object
+    properties:
+      Beneficiario:
+        $ref: '#/definitions/BeneficiarioPixViewModel'
+      FormaIniciacao:
+        type: integer
+        enum:
+          - 1
+          - 2
+          - 3
+        description: 1 - Chave PIX, 2 - Dados Bancários, 3 - QR-Code
+      Valor:
+        type: number
+        format: double
+        example: 123.45
+      Juros:
+        type: number
+        format: double
+        example: 4.45
+      Multa:
+        type: number
+        format: double
+        example: 3.45
+      Desconto:
+        type: number
+        format: double
+        example: 2.45
+      Abatimento:
+        type: number
+        format: double
+        example: 0
+      ValorFinanciado:
+        type: number
+        format: double
+        example: 0
+      ModalidadeAlteracao:
+        type: number
+        format: double
+        example: 0
+      DataTransferencia:
+        type: string
+        format: date
+        pattern: DD/MM/YYYY
+        example: 01/04/2024
+      DataVencimento:
+        type: string
+        format: date
+        pattern: DD/MM/YYYY
+        example: 01/04/2024
+      DataValidadeQrCode:
+        type: string
+        format: date
+        pattern: DD/MM/YYYY
+        example: 01/04/2024
+      DataApresentacaoQrCode:
+        type: string
+        format: date
+        pattern: DD/MM/YYYY HH:MI:SS
+        example: 13:00:00 01/04/2024
+      DataCriacaoQrCode:
+        type: string
+        format: date
+        pattern: DD/MM/YYYY HH:MI:SS
+        example: 13:00:00 01/04/2024
+      StatusQrCode:
+        type: string
+        example: ATIVA
+      SolicitacaoPagador:
+        type: string
+        example: teste
+      NomeDevedor:
+        type: string
+        example: teste
+      CpfCnpjDevedor:
+        type: string
+        example: '04854214478'
+        minLength: 11
+        maxLength: 14
+      Referencia:
+        type: string
+      InfoParaBeneficiario:
+        type: string
+      EndToEndIdDevolucao:
+        type: string
+        description: EndToEndId de devoluções, preenchido caso Devolucao = true
+      MotivoDevolucao:
+        type: string
+      CodigoDevolucao:
+        type: string
+        example: FOCR
+      Devolucao:
+        type: boolean
+        description: true para Pix devolvido e false caso contrário
+      ConsentId:
+        type: string
+        description: Campo para open banking
+      OrigemOpenBanking:
+        type: boolean
+        description: Campo para open banking
+      QrCode:
+        type: string
+      TipoQrCode:
+        type: string
+        example: dynamic
+        description: static ou dynamic
+      TxId:
+        type: string
+      RemtInf:
+        type: string
+      NumeroNF:
+        type: string
+      NumeroPedido:
+        type: string
+      CentroCusto:
+        type: string
+      Customizado1:
+        type: string
+      Customizado2:
+        type: string        
+  BeneficiarioPixViewModel:
+    type: object
+    properties:
+      Banco:
+        type: integer
+        example: 123
+      NomeBanco:
+        type: string
+        example: Banco Teste
+      Agencia:
+        type: string
+        example: 456
+      Conta:
+        type: string
+        example: 150455
+      Dv:
+        type: string
+        example: 1
+      TipoConta:
+        type: integer
+        enum:
+          - 1
+          - 2
+          - 3
+        description: 1 - Conta Corrente, 2 - Conta Poupança, 3 - Conta Pagamento
+      TipoPessoa:
+        type: integer
+        enum:
+          - 1
+          - 2
+        description: 1 - PF, 2 - PJ
+      CpfCnpj:
+        type: string
+        minLength: 11
+        maxLength: 14
+        example: '05791283911'
+      Nome:
+        type: string
+      Email:
+        type: string
+      TipoInstituicao:
+        type: integer
+        enum:
+          - 1
+          - 2
+        description: 1 - Instituição Financeira (Bancos), 2 - Instituições de Pagamentos
+      Apelido:
+        type: string
+      ChavePix:
+        type: string
+      TipoChavePix:
+        type: integer
+        enum:
+          - 1
+          - 2
+          - 3
+          - 4
+        description: 1 - CPF / CNPJ, 2 - Celular, 3 - Email, 4 - Chave Aleatória
+      Cidade:
+        type: string
+      Cep:
+        type: string
+        example: '20412138'
+      Logradouro:
+        type: string
+        example: Rua Teste 131
+      UF:
+        type: string
+        example: RJ
+      NomeFantasia:
+        type: string
+        example: Nome Fantasia teste         
+  CadastroChavePixViewModel:
+    type: object
+    required:
+      - Chave
+    properties:
+      Chave:
+        type: string
+        description: >
+          Chave PIX.
+
+          É obrigatória enquanto "TipoChave" for diferente de "ALEATORIA".
+
+          | Tipo    | Exp. Regular                      |                       
+          Exemplo        |
+
+          |--------
+          |-----------------------------------|---------------------------------------|
+
+          | CPF     | `^[0-9]{11}$`                                        |
+          `05864776084`      |
+
+          | CNPJ    | `^[0-9]{14}$`                                        |
+          `27855508000128`   |
+
+          | TELEFONE| `^+[1-9]\d{1,14}$`                                   |
+          `+552196123456`    |
+
+          | EMAIL   | `^[a-z0-9.!#$&'+/=?^_`{|}~-]+@a-z0-9?(?:.a-z0-9?)$`  |
+          `chavepix@pix.com` |
+        example: '+5521963630000'
+      TipoChave:
+        type: string
+        enum:
+          - CPF
+          - CNPJ
+          - EMAIL
+          - TELEFONE
+          - ALEATORIA
+        description: Tipo de chave PIX.
+        example: TELEFONE
+  RetornoCadastroChavePixViewModel:
+    type: object
+    required:
+      - Chave
+    properties:
+      Chave:
+        type: string
+        example: '+5521963630000'
+      TipoChave:
+        type: integer
+        enum:
+          - 1
+          - 2
+          - 3
+          - 4
+        description: "1 - CPF_CNPJ, 2 - PHONE, 3 - EMAIL e 4 - EVP"
+        example: PHONE
+        
+  BuscaChavePixViewModel:
+    type: object
+    required:
+      - Contexto
+      - Resultado
+      - StatusResposta
+      - CodigosMensagens
+      - Mensagens
+    properties:
+      Contexto:
+        type: array
+        items:
+          type: object
+          required:
+            - CodigoChaveEnderecamento
+            - Chave
+            - TipoChave
+            - Status
+          properties:
+            CodigoChaveEnderecamento:
+              type: integer
+              description: Código da chave Pix
+              example: 13
+            Chave:
+              type: string
+              description: Valor da chave Pix
+              example: "+5521963630000"
+            TipoChave:
+              type: string
+              enum:
+                - "CPF_CNPJ"
+                - "EMAIL"
+                - "PHONE"
+                - "EVP"
+              description: Tipo da chave Pix
+              example: "PHONE"
+            Status:
+              type: string
+              description: Status da chave Pix
+              enum:
+                - "AguardandoReivindicacao"
+                - "ReivindicacaoRejeitada"
+                - "AguardandoConferencia"
+                - "Reivindicada"
+                - "Ativa"
+                - "Excluida"
+                - "CriacaoVinculoPendente"
+              example: Ativa
+            Reivindicacoes:
+              description: Opcional retornar enquanto não houver reivindicações
+              type: array
+              items:
+                type: object
+                required:
+                  - CodigoReivindicacao
+                  - TipoReivindicacao
+                  - Status
+                properties:
+                  CodigoReivindicacao:
+                    type: integer
+                    description: Código da reivindicação da chave
+                    example: 11
+                  TipoReivindicacao:
+                    type: string
+                    enum:
+                      - "Posse"
+                      - "Portabilidade"
+                    description: Tipo de reivindicação
+                    example: "Posse"
+                  Status:
+                    type: string
+                    enum:
+                      - "AguardandoConferencia"
+                      - "AguardandoReivindicacao"
+                      - "Rejeitada"
+                      - "Aceita"
+                      - "Excluida"
+                    description: Status da reivindicação da chave
+                    example: "Aceita"
+      Resultado:
+        type: integer
+        example: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: 0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao
+      StatusResposta:
+        type: string
+        example: Sucesso
+      CodigosMensagens:
+        type: array
+        items:
+          type: string
+          example: operacaoRealizadaComSucesso
+      Mensagens:
+        type: array
+        items:
+          type: string
+          example: Operação realizada com sucesso.
+        
+        
+  CadastroReivindicacaoChavePixViewModel:
+    type: object
+    required:
+      - Chave
+      - TipoChave
+      - TipoReivindicacao
+    properties:
+      Chave:
+        type: string
+        example: chavepix@pix.com
+        description: Chave PIX.
+      TipoChave:
+        type: string
+        enum:
+          - CPF
+          - CNPJ
+          - TELEFONE
+          - EMAIL
+        example: EMAIL
+      TipoReivindicacao:
+        type: string
+        enum:
+          - Posse
+          - Portabilidade
+        example: portabilidade
+        description: >
+          De acordo com as normas do BACEN, a partir do dia 01/04/2025 só será
+          possível solicitar reivindicação de posse do tipo chave "Telefone"
+  S_Retorno_200_cadastro_chave_pix:
+    type: object
+    properties:
+      Contexto:
+        $ref: '#/definitions/RetornoCadastroChavePixViewModel'
+      Resultado:
+        type: integer
+        example: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: 0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao
+      StatusResposta:
+        type: string
+        example: Sucesso
+      CodigosMensagens:
+        type: array
+        items:
+          type: string
+          example: operacaoRealizadaComSucesso
+      Mensagens:
+        type: array
+        items:
+          type: string
+          example: Operação realizada com sucesso.
+  S_RetornoConsultaChavePix:
+    type: object
+    required:
+      - Contexto
+      - Resultado
+      - StatusResposta
+      - RespostaEnum
+      - CodigosMensagens
+      - Mensagens
+    properties:
+      Contexto:
+        $ref: '#/definitions/BeneficiarioChavePixViewModel'
+      Resultado:
+        type: integer
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: 0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao
+      StatusResposta:
+        type: string
+        example: Sucesso
+      Mensagens:
+        type: array
+        items:
+          type: string
+        example:
+          - operacaoRealizadaComSucesso
+      CodigosMensagens:
+        type: array
+        items:
+          type: string
+        example:
+          - Operação realizada com sucesso.
+  BeneficiarioChavePixViewModel:
+    type: object
+    required:
+      - Banco
+      - NomeBanco
+      - Agencia
+      - Conta
+      - Dv
+      - TipoConta
+      - TipoPessoa
+      - CpfCnpj
+      - Nome
+      - ChavePIX
+      - TipoChavePix
+      - DescricaoTipoChavePix
+      - DescricaoTipoConta
+      - AgenciaContaDV
+      - BancoENome
+      - DescricaoBeneficiario
+    properties:
+      Banco:
+        type: integer
+        description: Número do banco
+        example: 341
+      NomeBanco:
+        type: string
+        description: Nome do banco
+        example: Itaú
+      Agencia:
+        type: string
+        description: Número da agência
+        example: '0001'
+      Conta:
+        type: string
+        description: Número da conta
+        example: '000001'
+      Dv:
+        type: string
+        description: Dígito da conta
+        example: '0'
+      TipoConta:
+        type: integer
+        enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+        description: >-
+          1 - Conta Corrente, 2 - Conta Poupança, 3 - Conta Pagamento, 4 - Conta
+          de Pagamento e 5 - Conta Salário
+      TipoPessoa:
+        type: integer
+        enum:
+          - 1
+          - 2
+        description: 1 - Tipo Pessoa Física e 2 - Pessoa Jurídica
+        example: 1
+      CpfCnpj:
+        type: string
+        description: CPF ou CNPJ do beneficiário
+        example: 12345678909
+      Nome:
+        type: string
+        description: Nome do beneficiário
+        example: Heleonora Silva
+      ChavePIX:
+        type: string
+        description: Chave Pix do beneficiário
+        example: '+5521963630000'
+      TipoChavePix:
+        type: string
+        description: 1 - CPF, 1 - CNPJ, 2 - Telefone, 3 - Email e 4 - Aleatoria
+        enum:
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+        example: '2'
+      DescricaoTipoChavePix:
+        type: string
+        description: Descrição do tipo de chave Pix
+        example: Telefone
+      DescricaoTipoConta:
+        type: string
+        description: Descrição do tipo de conta
+        example: Conta Corrente
+      AgenciaContaDV:
+        type: string
+        description: Agência com o número da conta e dígito
+        example: 0001 / 000001 - 0
+      BancoENome:
+        type: string
+        description: Número do banco e nome
+        example: 341 - Itaú
+      DescricaoBeneficiario:
+        type: string
+        example: 'Heleonora Silva (Chave Pix: +5521966330001)'
+  ConsultaQrCodeViewModel:
+    type: object
+    properties:
+      QrCode:
+        type: string
+        example: >-
+          00020126360014BR.GOV.BCB.PIX0114+551132323232352040000530398654074500.005802BR5921JOAQUIM
+          JOSE DA SILVA6009SAO PAULO62180514PAGAMENTOTESTE63046A91
+      CpfCnpj:
+        type: string
+        example: 11477456767
+      DataPagamento:
+        type: string
+        format: date
+        pattern: DD/MM/YYYY
+        example: 01/05/2025
+  S_Consulta_QrCode_200:
+    type: object
+    properties:
+      Contexto:
+        $ref: '#/definitions/RetornoQrCodeViewModel'
+      Resultado:
+        type: integer
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: 0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao
+      StatusResposta:
+        type: string
+      Mensagens:
+        type: array
+        items:
+          type: string
+      CodigosMensagens:
+        type: array
+        items:
+          type: string
+  RetornoQrCodeViewModel:
+    type: object
+    properties:
+      Beneficiario:
+        $ref: '#/definitions/BeneficiarioPixViewModel'
+      FormaIniciacao:
+        type: integer
+        enum:
+          - 3
+        description: 3 - QR-Code
+      QrCode:
+        type: string
+        example: >-
+          00020126360014BR.GOV.BCB.PIX0114+551132323232352040000530398654074500.005802BR5921JOAQUIM
+          JOSE DA SILVA6009SAO PAULO62180514PAGAMENTOTESTE63046A91
+      IdQrCode:
+        type: string
+      TipoQrCode:
+        type: string
+        example: dynamic
+        description: static ou dynamic
+      StatusQrCode:
+        type: string
+        example: ATIVA
+      SolicitacaoPagador:
+        type: string
+        example: teste
+      NomeDevedor:
+        type: string
+        example: teste
+      CpfCnpjDevedor:
+        type: string
+        example: '04854214478'
+        minLength: 11
+        maxLength: 14
+      TxId:
+        type: string
+        example: dfaf23d3139d466492a0228b3de772e0
+      Valor:
+        type: number
+        format: double
+        example: 123.45
+      Juros:
+        type: number
+        format: double
+        example: 0
+      Multa:
+        type: number
+        format: double
+        example: 0
+      Desconto:
+        type: number
+        format: double
+        example: 2.45
+      Abatimento:
+        type: number
+        format: double
+        example: 1.45
+      ValorFinanciado:
+        type: number
+        format: double
+        example: 0
+      ModalidadeAlteracao:
+        type: number
+        enum:
+          - 0
+          - 1
+        example: 0
+        description: "0 - Não pode ter o valor alterado pelo cliente, 1 - Pode ter o valor alterado pelo cliente"
+      DataTransferencia:
+        type: string
+        format: date
+        pattern: YYYYMMDD
+        example: '20091105'
+      DataVencimento:
+        type: string
+        format: date
+        pattern: YYYYMMDD
+        example: '20091105'
+      DataValidadeQrCode:
+        type: string
+        format: date
+        pattern: YYYYMMDD
+        example: '20091105'
+      DataApresentacaoQrCode:
+        type: string
+        format: date
+        pattern: YYYYMMDDHHMISS
+        example: '20091105140013'
+      DataCriacaoQrCode:
+        type: string
+        format: date
+        pattern: YYYYMMDDHHMISS
+        example: '20091105140013'
+  S_Retorno_200:
+    type: object
+    properties:
+      Resultado:
+        type: integer
+        example: 0
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+        description: 0 - Sucesso, 1 - Aviso, 2 - Erro, 3 - Informacao
+      StatusResposta:
+        type: string
+        example: Sucesso
+      CodigosMensagens:
+        type: array
+        items:
+          type: string
+          example: operacaoRealizadaComSucesso
+      Mensagens:
+        type: array
+        items:
+          type: string
+          example: Operação realizada com sucesso.
+          
+          
+          
+# host: localhost
+# basePath: /contacorrente/{database}/e/{empresalogada}/contas-correntes
+schemes:
+ - https
+ - http
+# Added by API Auto Mocking Plugin
+host: localhost
+basePath: /contacorrente/0/e/1
+
+
+
+
